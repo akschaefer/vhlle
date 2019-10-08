@@ -68,13 +68,15 @@ void Cell::importVars(Cell* c) {
 }
 
 void Cell::updateByFlux() {
+ if(Q[0]+flux[0]<0.)
+  return;
  for (int i = 0; i < 7; i++) Q[i] += flux[i];
 }
 
 void Cell::updateByViscFlux() {
  if(fabs(flux[0]) <= 0.5*Q[0]) {
   for (int i = 0; i < 7; i++) Q[i] += flux[i];
- } else {
+ } else if (flux[0]!=0.){
   double fac;
   fac = fabs(0.5*Q[0]/flux[0]);
   for (int i = 0; i < 7; i++) Q[i] += fac*flux[i];
@@ -92,10 +94,12 @@ void Cell::getPrimVar(EoS *eos, double tau, double &_e, double &_p, double &_nb,
  for (int i = 0; i < 7; i++) _Q[i] = Q[i] / tau;
  transformPV(eos, _Q, _e, _p, _nb, _nq, _ns, _vx, _vy, _vz);
  //-------------------- debug ---------------
- if (_nb != _nb) {
+ #ifdef NAN_DEBUG
+ if (std::isinf(_nb) or std::isnan(_nb)) {
   cout << "---error in getPrimVar:\n";
   Dump(tau);
  }
+ #endif
  //------------------------------------------
 }
 
@@ -113,12 +117,14 @@ void Cell::getPrimVarLeft(EoS *eos, double tau, double &_e, double &_p,
  for (int i = 0; i < 7; i++) Ql[i] = (Q[i] - dQ[i]) / tau;
  transformPV(eos, Ql, _e, _p, _nb, _nq, _ns, _vx, _vy, _vz);
  //-------------------- debug ---------------
- if (_nb != _nb) {
+ #ifdef NAN_DEBUG
+ if (std::isinf(_nb) or std::isnan(_nb)) {
   cout << "---error in getPrimVarLeft:\n";
   Dump(tau);
   next[dir - 1]->Dump(tau);
   prev[dir - 1]->Dump(tau);
  }
+ #endif
  //------------------------------------------
 }
 
@@ -136,12 +142,14 @@ void Cell::getPrimVarRight(EoS *eos, double tau, double &_e, double &_p,
  for (int i = 0; i < 7; i++) Qr[i] = (Q[i] + dQ[i]) / tau;
  transformPV(eos, Qr, _e, _p, _nb, _nq, _ns, _vx, _vy, _vz);
  //-------------------- debug ---------------
- if (_nb != _nb) {
+ #ifdef NAN_DEBUG
+ if (std::isinf(_nb) or std::isnan(_nb)) {
   cout << "---error in getPrimVarRight:\n";
   Dump(tau);
   next[dir - 1]->Dump(tau);
   prev[dir - 1]->Dump(tau);
  }
+ #endif
  //------------------------------------------
 }
 
@@ -159,12 +167,14 @@ void Cell::getPrimVarHLeft(EoS *eos, double tau, double &_e, double &_p,
  for (int i = 0; i < 7; i++) Ql[i] = (Qh[i] - dQ[i]) / tau;
  transformPV(eos, Ql, _e, _p, _nb, _nq, _ns, _vx, _vy, _vz);
  //-------------------- debug ---------------
- if (_nb != _nb) {
+ #ifdef NAN_DEBUG
+ if (std::isinf(_nb) or std::isnan(_nb)) {
   cout << "---error in getPrimVarHLeft:\n";
   Dump(tau);
   next[dir - 1]->Dump(tau);
   prev[dir - 1]->Dump(tau);
  }
+ #endif
  //------------------------------------------
 }
 
@@ -182,12 +192,14 @@ void Cell::getPrimVarHRight(EoS *eos, double tau, double &_e, double &_p,
  for (int i = 0; i < 7; i++) Qr[i] = (Qh[i] + dQ[i]) / tau;
  transformPV(eos, Qr, _e, _p, _nb, _nq, _ns, _vx, _vy, _vz);
  //-------------------- debug ---------------
- if (_nb != _nb) {
+ #ifdef NAN_DEBUG
+ if (std::isinf(_nb) or std::isnan(_nb)) {
   cout << "---error in getPrimVarHRight:\n";
   Dump(tau);
   next[dir - 1]->Dump(tau);
   prev[dir - 1]->Dump(tau);
  }
+ #endif
  //------------------------------------------
 }
 
@@ -218,7 +230,7 @@ void Cell::setPrimVar(EoS *eos, double tau, double _e, double _nb, double _nq,
  Q[NB_] = tau * _nb * sqrt(gamma2);
  Q[NQ_] = tau * _nq * sqrt(gamma2);
  Q[NS_] = tau * _ns * sqrt(gamma2);
- if (Q[NB_] != Q[NB_]) {
+ if (std::isinf(Q[NB_]) or std::isnan(Q[NB_])) {
   cout << "init error!\n";
   eos->p(_e, _nb, _nq, _ns);
   cout << "e = " << _e << " p = " << p << " vx = " << _vx << " vy = " << _vy
