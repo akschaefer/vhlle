@@ -614,10 +614,13 @@ void Fluid::outputSurface(double tau) {
      for (int ii = 0; ii < 4; ii++)
       dVEff += dsigma[ii] * uC[ii];  // normalize for Delta eta=1
      vEff += dVEff;
-     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << dsigma[ii];
-     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << uC[ii];
-     output::ffreeze << setw(24) << TC << setw(24) << mubC << setw(24) << muqC
-             << setw(24) << musC;
+     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << dsigma[ii] / tauC;
+     for (int ii = 0; ii < 3; ii++) output::ffreeze << setw(24) << uC[ii];
+     output::ffreeze << setw(24) << uC[3] * tauC;
+
+     output::ffreeze << setw(24) << eC << setw(24) << TC << setw(24) << mubC << setw(24) << (eC + pC) / TC;
+     // output::ffreeze << setw(24) << TC << setw(24) << mubC << setw(24) << muqC
+     //         << setw(24) << musC;
 #ifdef OUTPI
      double picart[10];
      /*pi00*/ picart[index44(0, 0)] = ch * ch * piC[index44(0, 0)] +
@@ -827,10 +830,13 @@ void Fluid::outputCorona(double tau) {
      for (int ii = 0; ii < 4; ii++)
       dVEff += dsigma[ii] * uC[ii];  // normalize for Delta eta=1
      vEff += dVEff;
-     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << dsigma[ii];
-     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << uC[ii];
-     output::ffreeze << setw(24) << TC << setw(24) << mubC << setw(24) << muqC
-             << setw(24) << musC;
+     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << dsigma[ii] / tauC;
+     for (int ii = 0; ii < 3; ii++) output::ffreeze << setw(24) << uC[ii];
+     output::ffreeze << setw(24) << uC[3] * tauC;
+
+     output::ffreeze << setw(24) << eC << setw(24) << TC << setw(24) << mubC << setw(24) << (eC + pC) / TC;
+     // output::ffreeze << setw(24) << TC << setw(24) << mubC << setw(24) << muqC
+     //         << setw(24) << musC;
 #ifdef OUTPI
      double picart[10];
      /*pi00*/ picart[index44(0, 0)] = ch * ch * piC[index44(0, 0)] +
