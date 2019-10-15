@@ -434,6 +434,9 @@ void transformToLab(double eta, double &vx, double &vy, double &vz) {
 }
 
 void Fluid::outputSurface(double tau) {
+ // Conversion factor GeV <-> fm^-1. It holds that hbarc = 1 GeV * fm.
+ // Necessary to provide the hypersurface output with the correct units.
+ const double hbarc = 0.197327053;
  static double nbSurf = 0.0;
  double e, p, nb, nq, ns, t, mub, muq, mus, vx, vy, vz, Q[7];
  double E = 0., Efull = 0., S = 0., Px = 0., vt_num = 0., vt_den = 0.,
@@ -605,15 +608,15 @@ void Fluid::outputSurface(double tau) {
       dVEff += tauC * cornelius->get_normal_elem(0, ii) * uC[ii] * invTauCorr[ii];
      vEff += dVEff;
      for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24)
-      << tauC * cornelius->get_normal_elem(0, ii) * invTauCorr[ii];
+      << cornelius->get_normal_elem(0, ii);
      for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << uC[ii];
-     output::ffreeze << setw(24) << TC << setw(24) << mubC << setw(24) << muqC
-             << setw(24) << musC;
+     output::ffreeze << setw(24) << eC / hbarc << setw(24) << TC / hbarc
+     << setw(24) << mubC / hbarc << setw(24) << (eC + pC) / TC;
 #ifdef OUTPI
      // !! all components of piC[] have the same units, which means that
      // pi^{eta,*} is multiplied by tau and pi^{eta,eta} by tau^2
-     for (int ii = 0; ii < 10; ii++) output::ffreeze << setw(24) << piC[ii];
-     output::ffreeze << setw(24) << PiC << endl;
+     for (int ii = 0; ii < 10; ii++) output::ffreeze << setw(24) << piC[ii] / hbarc;
+     output::ffreeze << setw(24) << PiC / hbarc << endl;
 #else
      output::ffreeze << setw(24) << dVEff << endl;
 #endif
@@ -658,6 +661,9 @@ void Fluid::outputSurface(double tau) {
 }
 
 void Fluid::outputCorona(double tau) {
+ // Conversion factor GeV <-> fm^-1. It holds that hbarc = 1 GeV * fm.
+ // Necessary to provide the hypersurface output with the correct units.
+ const double hbarc = 0.197327053;
  static double nbSurf = 0.0;
  double e, p, nb, nq, ns, t, mub, muq, mus, vx, vy, vz, Q[7];
  double E = 0., Efull = 0., S = 0., Px = 0., vt_num = 0., vt_den = 0.,
@@ -802,13 +808,12 @@ void Fluid::outputCorona(double tau) {
      for (int ii = 0; ii < 4; ii++)
       dVEff += dsigma[ii] * uC[ii];  // normalize for Delta eta=1
      vEff += dVEff;
-     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << dsigma[ii];
-     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << uC[ii];
-     output::ffreeze << setw(24) << TC << setw(24) << mubC << setw(24) << muqC
-             << setw(24) << musC;
+     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << dsigma[ii] / tauC;
+     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << eC / hbarc
+     << setw(24) << TC / hbarc << setw(24) << mubC / hbarc << setw(24) << (eC + pC) / TC;
 #ifdef OUTPI
-     for (int ii = 0; ii < 10; ii++) output::ffreeze << setw(24) << piC[ii];
-     output::ffreeze << setw(24) << PiC << endl;
+     for (int ii = 0; ii < 10; ii++) output::ffreeze << setw(24) << piC[ii] / hbarc;
+     output::ffreeze << setw(24) << PiC / hbarc << endl;
 #else
      output::ffreeze << setw(24) << dVEff << endl;
 #endif
