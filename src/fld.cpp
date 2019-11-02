@@ -808,8 +808,7 @@ void Fluid::outputCorona(double tau) {
      for (int ii = 0; ii < 4; ii++)
       dVEff += dsigma[ii] * uC[ii];  // normalize for Delta eta=1
      vEff += dVEff;
-     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24)
-      << cornelius->get_normal_elem(0, ii);
+     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << dsigma[ii];
      for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << uC[ii];
      output::ffreeze << setw(24) << eC / hbarc << setw(24) << TC / hbarc
      << setw(24) << mubC / hbarc << setw(24) << (eC + pC) / TC;
