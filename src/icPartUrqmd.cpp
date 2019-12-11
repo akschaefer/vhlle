@@ -137,6 +137,34 @@ IcPartUrqmd::~IcPartUrqmd() {
 }
 
 void IcPartUrqmd::makeSmoothTable(int npart) {
+ // To add Baryon contributions to net-baryon number
+ // PDG IDs corresponding to Baryons included in SMASH-1.7
+ int PDG_Codes_Baryons[142] = {2112, 2212, 12112, 12212, 1214, 2124, 22112,
+                           22212, 32112, 32212, 2116, 2216, 12116, 12216, 21214,
+                           22124, 42112, 42212, 31214, 32124, 9902114, 9902214,
+                           9952112, 9952212, 9962112, 9962212, 9912114, 9912214,
+                           9902118, 9902218, 9922116, 9922216, 9922114, 9922214,
+                           9972112, 9972212, 9932114, 9932214, 1218, 2128,
+                           19922119, 19922219, 19932119, 19932219,
+                           1114, 2114, 2214, 2224, 31114, 32114, 32214,
+                           32224,1112, 1212, 2122, 2222, 11114, 12114,
+                           12214, 12224, 11112, 11212, 12122, 12222, 1116,
+                           1216, 2126, 2226, 21112, 21212, 22122, 22222,
+                           21114, 22114, 22214, 22224, 11116, 11216,
+                           12126, 12226, 1118, 2118, 2218, 2228,
+                           3122, 13122, 3124, 23122, 23122, 13124,
+                           43122, 53122, 3126, 13126, 23124, 3128,
+                           23126, 19903129,
+                           3112, 3212, 3222, 3114, 3214, 3224, 13112,
+                           13212, 13222, 13114, 13214, 13224, 23112,
+                           23212, 23222, 3116, 3216, 3226, 13116, 13216,
+                           13226, 23114, 23214, 23224, 3118, 3218, 3228,
+                           9903118, 9903218, 9903228,
+                           3312, 3322, 3314, 3324, 203312, 203322, 13314,
+                           13324, 103316, 103326, 203316, 203326,
+                           3334, 203338};
+
+
  for (int ip = 0; ip < npart; ip++) {  // particle loop
   int ixc = (int)((X[ip] - xmin) / dx);
   int iyc = (int)((Y[ip] - ymin) / dy);
@@ -188,9 +216,15 @@ void IcPartUrqmd::makeSmoothTable(int npart) {
       // foutd<<setw(14)<<Mt[ip]<<setw(14)<<Rap[ip]<<setw(14)<<Eta[ip]-zdiff<<setw(14)<<weight<<endl
       // ;
       //}
-      if (Id[ip] > 0 && Id[ip] < 56)
-       QB[ix][iy][iz] += weight;  // correct expression (only weight)!
-      if (Id[ip] < 0 && Id[ip] > -56) QB[ix][iy][iz] -= weight;
+      // Add baryons and antibaryons
+      for (auto &code : PDG_Codes_Baryons) {
+        if (Id[ip] == code) {
+          QB[ix][iy][iz] += weight;  // correct expression (only weight)!
+        } else if (Id[ip] == (-1 * code)) {
+          QB[ix][iy][iz] -= weight;
+        }
+      }
+      // Add electrice charge quantum number
       QE[ix][iy][iz] += Charge[ip] * weight;
       //}
      }
