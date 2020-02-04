@@ -434,9 +434,6 @@ void transformToLab(double eta, double &vx, double &vy, double &vz) {
 }
 
 void Fluid::outputSurface(double tau) {
- // Conversion factor GeV <-> fm^-1. It holds that hbarc = 1 GeV * fm.
- // Necessary to provide the hypersurface output with the correct units.
- const double hbarc = 0.197327053;
  static double nbSurf = 0.0;
  double e, p, nb, nq, ns, t, mub, muq, mus, vx, vy, vz, Q[7];
  double E = 0., Efull = 0., S = 0., Px = 0., vt_num = 0., vt_den = 0.,
@@ -598,36 +595,62 @@ void Fluid::outputSurface(double tau) {
       v2C = 0.99;
      }
      double etaC = getZ(iz) + cornelius->get_centroid_elem(isegm, 3);
+     transformToLab(etaC, vxC, vyC, vzC);  // viC is now in lab.frame!
      double gammaC = 1. / sqrt(1. - vxC * vxC - vyC * vyC - vzC * vzC);
 
      double uC[4] = {gammaC, gammaC * vxC, gammaC * vyC, gammaC * vzC};
      const double tauC = tau + cornelius->get_centroid_elem(isegm, 0);
-     const double invTauCorr [4] = {1., 1., 1., 1./tauC};
+     double dsigma[4];
+     // ---- transform dsigma to lab.frame :
+     const double ch = cosh(etaC);
+     const double sh = sinh(etaC);
+     dsigma[0] = tauC * (ch * cornelius->get_normal_elem(0, 0) -
+                         sh / tauC * cornelius->get_normal_elem(0, 3));
+     dsigma[3] = tauC * (-sh * cornelius->get_normal_elem(0, 0) +
+                         ch / tauC * cornelius->get_normal_elem(0, 3));
+     dsigma[1] = tauC * cornelius->get_normal_elem(0, 1);
+     dsigma[2] = tauC * cornelius->get_normal_elem(0, 2);
      double dVEff = 0.0;
      for (int ii = 0; ii < 4; ii++)
-      dVEff += tauC * cornelius->get_normal_elem(0, ii) * uC[ii] * invTauCorr[ii];
+      dVEff += dsigma[ii] * uC[ii];  // normalize for Delta eta=1
      vEff += dVEff;
-     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24)
-      << cornelius->get_normal_elem(0, ii);
+     for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << dsigma[ii];
      for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << uC[ii];
-     output::ffreeze << setw(24) << eC / hbarc << setw(24) << TC / hbarc
-     << setw(24) << mubC / hbarc << setw(24) << (eC + pC) / TC;
+     output::ffreeze << setw(24) << TC << setw(24) << mubC << setw(24) << muqC
+             << setw(24) << musC;
 #ifdef OUTPI
-     // !! all components of piC[] have the same units, which means that
-     // pi^{eta,*} is multiplied by tau and pi^{eta,eta} by tau^2
-     for (int ii = 0; ii < 10; ii++) output::ffreeze << setw(24) << piC[ii] / hbarc;
-     output::ffreeze << setw(24) << PiC / hbarc << endl;
+     double picart[10];
+     /*pi00*/ picart[index44(0, 0)] = ch * ch * piC[index44(0, 0)] +
+                                      2. * ch * sh * piC[index44(0, 3)] +
+                                      sh * sh * piC[index44(3, 3)];
+     /*pi01*/ picart[index44(0, 1)] =
+         ch * piC[index44(0, 1)] + sh * piC[index44(3, 1)];
+     /*pi02*/ picart[index44(0, 2)] =
+         ch * piC[index44(0, 2)] + sh * piC[index44(3, 2)];
+     /*pi03*/ picart[index44(0, 3)] =
+         ch * sh * (piC[index44(0, 0)] + piC[index44(3, 3)]) +
+         (ch * ch + sh * sh) * piC[index44(0, 3)];
+     /*pi11*/ picart[index44(1, 1)] = piC[index44(1, 1)];
+     /*pi12*/ picart[index44(1, 2)] = piC[index44(1, 2)];
+     /*pi13*/ picart[index44(1, 3)] =
+         sh * piC[index44(0, 1)] + ch * piC[index44(3, 1)];
+     /*pi22*/ picart[index44(2, 2)] = piC[index44(2, 2)];
+     /*pi23*/ picart[index44(2, 3)] =
+         sh * piC[index44(0, 2)] + ch * piC[index44(3, 2)];
+     /*pi33*/ picart[index44(3, 3)] = sh * sh * piC[index44(0, 0)] +
+                                      ch * ch * piC[index44(3, 3)] +
+                                      2. * sh * ch * piC[index44(0, 3)];
+     for (int ii = 0; ii < 10; ii++) output::ffreeze << setw(24) << picart[ii];
+     output::ffreeze << setw(24) << PiC << endl;
 #else
      output::ffreeze << setw(24) << dVEff << endl;
 #endif
      double dEsurfVisc = 0.;
      for (int i = 0; i < 4; i++)
-      dEsurfVisc += piC[index44(0, i)] * cornelius->get_normal_elem(0, i) * invTauCorr[i];
-     // now technically EtotSurf is a flow of P^\tau through the hypersurface,
-     // so it doesn't have a clear interpretation as energy flow.
-     EtotSurf += (eC + pC) * uC[0] * dVEff
-      - pC * tauC * cornelius->get_normal_elem(0, 0) + dEsurfVisc;
+      dEsurfVisc += picart[index44(0, i)] * dsigma[i];
+     EtotSurf += (eC + pC) * uC[0] * dVEff - pC * dsigma[0] + dEsurfVisc;
      nbSurf += nbC * dVEff;
+     std::cout << EtotSurf << '\n';
     }
     // if(cornelius->get_Nelements()>1) cout << "oops, Nelements>1\n" ;
     //----- end Cornelius
@@ -661,9 +684,6 @@ void Fluid::outputSurface(double tau) {
 }
 
 void Fluid::outputCorona(double tau) {
- // Conversion factor GeV <-> fm^-1. It holds that hbarc = 1 GeV * fm.
- // Necessary to provide the hypersurface output with the correct units.
- const double hbarc = 0.197327053;
  static double nbSurf = 0.0;
  double e, p, nb, nq, ns, t, mub, muq, mus, vx, vy, vz, Q[7];
  double E = 0., Efull = 0., S = 0., Px = 0., vt_num = 0., vt_den = 0.,
@@ -791,17 +811,17 @@ void Fluid::outputCorona(double tau) {
       v2C = 0.99;
      }
      double etaC = getZ(iz) + 0.5 * dz;
+     transformToLab(etaC, vxC, vyC, vzC);  // viC is now in lab.frame!
      double gammaC = 1. / sqrt(1. - vxC * vxC - vyC * vyC - vzC * vzC);
 
      double uC[4] = {gammaC, gammaC * vxC, gammaC * vyC, gammaC * vzC};
      const double tauC = tau;
-     const double invTauCorr [4] = {1., 1., 1., 1./tauC};
      double dsigma[4];
      // ---- transform dsigma to lab.frame :
      const double ch = cosh(etaC);
      const double sh = sinh(etaC);
-     dsigma[0] = tauC * dx * dy * dz;
-     dsigma[3] = 0.0;
+     dsigma[0] = tauC * (ch * dx * dy * dz);
+     dsigma[3] = tauC * (-sh * dx * dy * dz);
      dsigma[1] = 0.0;
      dsigma[2] = 0.0;
      double dVEff = 0.0;
@@ -810,19 +830,41 @@ void Fluid::outputCorona(double tau) {
      vEff += dVEff;
      for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << dsigma[ii];
      for (int ii = 0; ii < 4; ii++) output::ffreeze << setw(24) << uC[ii];
-     output::ffreeze << setw(24) << eC / hbarc << setw(24) << TC / hbarc
-     << setw(24) << mubC / hbarc << setw(24) << (eC + pC) / TC;
+     output::ffreeze << setw(24) << TC << setw(24) << mubC << setw(24) << muqC
+             << setw(24) << musC;
 #ifdef OUTPI
-     for (int ii = 0; ii < 10; ii++) output::ffreeze << setw(24) << piC[ii] / hbarc;
-     output::ffreeze << setw(24) << PiC / hbarc << endl;
+     double picart[10];
+     /*pi00*/ picart[index44(0, 0)] = ch * ch * piC[index44(0, 0)] +
+                                      2. * ch * sh * piC[index44(0, 3)] +
+                                      sh * sh * piC[index44(3, 3)];
+     /*pi01*/ picart[index44(0, 1)] =
+         ch * piC[index44(0, 1)] + sh * piC[index44(3, 1)];
+     /*pi02*/ picart[index44(0, 2)] =
+         ch * piC[index44(0, 2)] + sh * piC[index44(3, 2)];
+     /*pi03*/ picart[index44(0, 3)] =
+         ch * sh * (piC[index44(0, 0)] + piC[index44(3, 3)]) +
+         (ch * ch + sh * sh) * piC[index44(0, 3)];
+     /*pi11*/ picart[index44(1, 1)] = piC[index44(1, 1)];
+     /*pi12*/ picart[index44(1, 2)] = piC[index44(1, 2)];
+     /*pi13*/ picart[index44(1, 3)] =
+         sh * piC[index44(0, 1)] + ch * piC[index44(3, 1)];
+     /*pi22*/ picart[index44(2, 2)] = piC[index44(2, 2)];
+     /*pi23*/ picart[index44(2, 3)] =
+         sh * piC[index44(0, 2)] + ch * piC[index44(3, 2)];
+     /*pi33*/ picart[index44(3, 3)] = sh * sh * piC[index44(0, 0)] +
+                                      ch * ch * piC[index44(3, 3)] +
+                                      2. * sh * ch * piC[index44(0, 3)];
+     for (int ii = 0; ii < 10; ii++) output::ffreeze << setw(24) << picart[ii];
+     output::ffreeze << setw(24) << PiC << endl;
 #else
      output::ffreeze << setw(24) << dVEff << endl;
 #endif
      double dEsurfVisc = 0.;
      for (int i = 0; i < 4; i++)
-      dEsurfVisc += piC[index44(0, i)] * dsigma[i];
+      dEsurfVisc += picart[index44(0, i)] * dsigma[i];
      EtotSurf += (eC + pC) * uC[0] * dVEff - pC * dsigma[0] + dEsurfVisc;
      nbSurf += nbC * dVEff;
+     std::cout << EtotSurf << '\n';
     }
     //----- end Cornelius
    }
