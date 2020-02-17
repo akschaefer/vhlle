@@ -650,7 +650,7 @@ void Fluid::outputSurface(double tau) {
       dEsurfVisc += picart[index44(0, i)] * dsigma[i];
      EtotSurf += (eC + pC) * uC[0] * dVEff - pC * dsigma[0] + dEsurfVisc;
      nbSurf += nbC * dVEff;
-     std::cout << EtotSurf << '\n';
+     std::cout << EtotSurf << "\t" << nbSurf << '\n';
     }
     // if(cornelius->get_Nelements()>1) cout << "oops, Nelements>1\n" ;
     //----- end Cornelius
@@ -864,7 +864,7 @@ void Fluid::outputCorona(double tau) {
       dEsurfVisc += picart[index44(0, i)] * dsigma[i];
      EtotSurf += (eC + pC) * uC[0] * dVEff - pC * dsigma[0] + dEsurfVisc;
      nbSurf += nbC * dVEff;
-     std::cout << EtotSurf << '\n';
+     std::cout << EtotSurf << "\t" << nbSurf << '\n';
     }
     //----- end Cornelius
    }
