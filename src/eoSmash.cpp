@@ -42,9 +42,9 @@ EoSSmash::EoSSmash(char* filename, int Ne, int Nn) {
  getline(fin, header_str); // skip the header line
  for (int ie = 0; ie < ne; ie++)
   for (int in = 0; in < nn; in++) {
-   // T [GeV], mu [GeV], energy density [GeV/fm3], baryon density [1/fm3]
-   fin >> e[ie] >> n[in] >> Ttab[ie][in] >> mubtab[ie][in] >> mustab[ie][in];
-   ptab[ie][in] = 0.0;
+    // e  nb  T   p   muB   muS
+   // [GeV/fm3] [1/fm3] [GeV] [GeV/fm^3] [GeV] [GeV]
+   fin >> e[ie] >> n[in] >> Ttab[ie][in] >> ptab[ie][in] >> mubtab[ie][in] >> mustab[ie][in];
   }
  emin = e[0];
  emax = e[ne - 1];
