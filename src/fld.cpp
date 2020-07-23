@@ -764,7 +764,7 @@ void Fluid::outputCorona(double tau) {
        cc->getPrimVar(eos, tau, e, _p, _nb, _nq, _ns, _vx, _vy, _vz);
        cc->getQ(QCube[jx][jy][jz]);
        if (e > ecrit) isCorona = false;
-       if (e > 0.01) isTail = false;
+       if (e > 0.0001) isTail = false;
        // ---- get viscous tensor
        for (int ii = 0; ii < 4; ii++)
         for (int jj = 0; jj <= ii; jj++)
